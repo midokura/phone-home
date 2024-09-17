@@ -1,4 +1,5 @@
 import https from 'https';
+import child_process from 'child_process';
 
 /**
  * Gets the value of an input.
@@ -58,6 +59,52 @@ var reportStatus = (token, repository, sha, context, state, description, url) =>
     }));
 });
 
+var listJobs = (token, repository, run_id) => new Promise((resolve, reject) => {
+    const status_req = https.request({
+        hostname: 'api.github.com',
+        port: 443,
+        path: `/repos/${repository}/actions/runs/${run_id}/jobs`,
+        method: 'GET',
+        headers: {
+            'User-Agent': 'casaroli',
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28'
+        },
+    }, (res) => {
+        let data = Buffer.alloc(0);
+        res.on('data', (d) => {
+            data = Buffer.concat([data, d]);
+        });
+        res.on('close', () => {
+            console.log('received statusCode:', res.statusCode);
+            if (!res.statusCode || Math.floor(res.statusCode / 100) != 2) {
+                console.error('error, bad statusCode', res.statusCode, 'expected: 2xx');
+                reject();
+            }
+        });
+        res.on('end', () => {
+            if (data.length) {
+                const str = new TextDecoder().decode(data);
+                console.log("received data:", JSON.parse(str));
+            }
+            resolve(data);
+        });
+    });
+    status_req.on('error', (e) => {
+        console.error(e);
+        reject();
+    });
+    status_req.end();
+});
+
+function getState(name) {
+    console.log("will cat");
+    child_process.exec(`cat ${process.env['GITHUB_STATE']}`);
+    console.log("cat done");
+    return process.env[`STATE_${name}`] || '';
+}
+
 const phone_home_input = getInput('phone-home-input');
 const target_url = getInput('target-url');
 const custom_context = getInput('context');
@@ -70,6 +117,14 @@ const token = phone_home_list[0];
 const repository = phone_home_list[1];
 const sha = phone_home_list[2];
 const context = phone_home_list.slice(3).join(';');
+console.log(`::group::Get current job status`);
+const run_id = process.env['GITHUB_RUN_ID'] || '';
+console.log('Run ID:', run_id);
+const jobs = await listJobs(token, repository, run_id);
+console.log('List Jobs:', jobs);
+console.log("Job ID", getState('job_id'));
+console.log(child_process.execSync("env").toString());
+console.log("::endgroup::");
 console.log(`::group::Report finished status to ${repository}:${sha}`);
 console.log('context:', context);
 console.log('target_url:', target_url);
