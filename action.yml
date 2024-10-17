@@ -11,7 +11,11 @@ inputs:
     required: false
     default: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   context:
-    description: Override the context status
+    description: Override the context status (not recomended, othewrise the original PR will keep the original context pending for a result)
+    type: string
+    required: false
+  status:
+    description: Override the status result (success, failure, pending, ...)
     type: string
     required: false
 
