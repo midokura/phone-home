@@ -108,6 +108,7 @@ function getState(name) {
 const phone_home_input = getInput('phone-home-input');
 const target_url = getInput('target-url');
 const custom_context = getInput('context');
+const custom_status = getInput('status');
 const phone_home_list = phone_home_input.split(';');
 if (phone_home_list.length < 4) {
     console.error('bad phone home input:', phone_home_input);
@@ -128,6 +129,6 @@ console.log("::endgroup::");
 console.log(`::group::Report finished status to ${repository}:${sha}`);
 console.log('context:', context);
 console.log('target_url:', target_url);
-await reportStatus(token, repository, sha, custom_context || context, 'success', 'Finished', target_url);
+await reportStatus(token, repository, sha, custom_context || context, custom_status, 'Finished', target_url);
 console.log("::endgroup::");
 //# sourceMappingURL=post.js.map
